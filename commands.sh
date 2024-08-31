@@ -51,12 +51,42 @@ kubectl exec deploy/hello-kiamol-4 -- sh -c 'wget -O - http://localhost > /dev/n
 # Copy the web page from the Pod:
 kubectl cp <pod-name>:<pod-path-to-copy> <host-file-to-copy>
 kubectl cp hello-kiamol:/usr/share/nginx/html/index.html /tmp/kiamol/ch02/index.html
+kubectl cp hello-kiamol:/usr/share/nginx/html/index.html /tmp/index.html
 
+# Delete deploy controller of pods
+kubectl delete deploy --all
 
+# Deploy multiple in one command
+kubectl apply -f sleep/sleep1.yaml -f sleep/sleep2.yaml
+# wait deploy ready
+kubectl wait --for=condition=Ready pod -l app=sleep2
+# get IP
+kubectl get pod -l app=sleep-2 --output jsonpath='{.items[0].status.podIP}'
+-> 10.42.0.27
+kubectl exec deploy/sleep-1 -- ping -c 2 $(kubectl get pod -l app=sleep-2 --output jsonpath='{.items[0].status.podIP}')
+# chec the ip address of replacement pod:
+kubectl get pod -l app=sleep-2 --output jsonpath='{.items[0].status.podIP}'
+-> 10.42.0.29
+# deploy the service defined 
+kubectl apply -f sleep/sleep2-service.yaml
+# show the basic details of the service:
+kubectl get svc sleep-2
+# run ping
+kubectl exec deploy/sleep-1 -- ping -c 1 sleep-2
+# 3.2 Routing traffic between Pods
+kubectl apply -f numbers/api.yaml -f numbers/web.yaml
+# forward a port to the web app:
+kubectl port-forward deploy/numbers-web 8080:80
+# deploy the service 
+kubectl apply -f numbers/api-service.yaml
 
+kubectl get pod -l app=numbers-api
 
-
-
+###############################################################################
+# 3.3 Routing external traffic to Pods
+###############################################################################
+kubectl get svc numbers-web -o jsonpath='http://{.status.loadBalancer.ingress[0].*}:8080'
+kubectl get nodes
 
 
 
