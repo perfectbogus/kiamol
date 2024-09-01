@@ -85,8 +85,54 @@ kubectl get pod -l app=numbers-api
 ###############################################################################
 # 3.3 Routing external traffic to Pods
 ###############################################################################
+kubectl apply -f sleep/sleep1.yaml -f sleep/sleep2.yaml
+kubectl apply -f sleep/sleep2-service.yaml
+kubectl apply -f numbers/api.yaml -f numbers/web.yaml
+kubectl apply -f numbers/api-service.yaml
+kubectl apply -f numbers/web-service.yaml
+
 kubectl get svc numbers-web -o jsonpath='http://{.status.loadBalancer.ingress[0].*}:8080'
 kubectl get nodes
+
+# delete the current API Service:
+kubectl delete svc numbers-api
+
+# deploy a new ExternalName Service:
+kubectl apply -f numbers-services/api-service-externalName.yaml
+
+# run the DNS lookup tool to resolve the Service name:
+kubectl exec deploy/sleep-1 -- sh -c 'nslookup numbers-api | tail -n 5'
+
+kubectl delete svc numbers-api
+
+kubectl apply -f numbers-services/api-service-headless.yaml
+
+# verify the DNS lookup:
+kubectl exec deploy/sleep-1 -- sh -c 'nslookup numbers-api | grep "^[^*]"'
+
+###
+# Understanding Kubernetes Service Resolution
+###
+kubectl get endpoints sleep-2
+kubectl delete pods -l app=sleep-2
+kubectl get endpoints sleep-2
+kubectl delete deploy sleep-2
+kubectl get endpoints sleep-2
+
+kubectl get svc --namespace default
+kubectl get svc -n kube-system
+kubectl exec deploy/sleep-1 -- sh -c 'nslookup numbers-api.default.svc.cluster.local | grep "^[^*]"'
+kubectl exec deploy/sleep-1 -- sh -c 'nslookup kube-dns.kube-system.svc.cluster.local | grep "^[^*]"'
+
+kubectl delete deploy --all
+kubectl delete svc --all
+kubectl get all
+
+
+
+
+
+
 
 
 
