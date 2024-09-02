@@ -128,7 +128,16 @@ kubectl delete deploy --all
 kubectl delete svc --all
 kubectl get all
 
+####
+# 4: Configuring applications with ConfigMaps and Secrets
+####
+kubectl apply -f sleep/sleep.yaml
+kubectl wait --for=condition=Ready pod -l app=sleep
+kubectl exec deploy/sleep -- printenv HOSTNAME KIAMOL_CHAPTER
 
+kubectl create configmap sleep-config-literal --from-literal=kiamol.section='4.1'
+kubectl get cm sleep-config-literal
+kubectl describe cm sleep-config-literal
 
 
 
