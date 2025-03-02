@@ -299,4 +299,56 @@ kubectl get pv
 kubectl delete pvc postgres-pvc-dynamic
 # check volumes again:
 kubectl get pv
+# list the storage classes in the cluster:
+kubectl get storageclass
+# clone the default on windows
+chmod +x cloneDefaultStorageClass.sh && ./cloneDefaultStorageClass.sh
+# list storage classes
+kubectl get sc
+
+####
+# 5.5 Understanding storage choices in K8s
+####
+# delete deployments, PVCs, PVs, and Services:
+kubectl delete -f pi/v1 -f sleep/ -f storageClass/ -f todo-list/web -f todo-list/postgres -f todo-list/
+# delete the custom storage class
+kubectl delete sc kiamol
+
+####
+# LAB
+####
+kubectl apply -f lab/todo-list
+
+--- 
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: todo-proxy-lab-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+
+-- pvc-todo-web.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: todo-web-lab-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi 
+
+
+
+
+
+
+
+
+
 
