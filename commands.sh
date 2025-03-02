@@ -210,3 +210,93 @@ kubectl get nodes -l kiamol=ch05
 kubectl apply -f todo-list/persistentVolume.yaml
 # check the PV:
 kubectl get pv
+
+---
+- postgres-persistentVolumeClaim.yaml
+apiVersion: v1
+kind: persistentVolumeClaim
+metadata:
+	name: postgres-pvc
+spec:
+	accessModes:
+	 	- ReadWriteOnce
+	resources:
+		requests:
+			storage: 40Mi
+	storageClassName: "" # A blank class means a PV needs to exist.
+
+# create a pvc that will bind to the PV:
+kubectl apply -f todo-list/postgres-persistentVolumeClaim.yaml
+# check PVCs
+kubectl get pvc
+# check PVs"
+kubectl get pv
+# Create PVC that doen't match any available PVs:
+kubectl apply -f todo-list/postgres-persistentVolumeClaim-too-big.yaml
+# check claims
+kubectl get pvc
+---
+spec:
+	containers:
+		- name: db
+		image: postgres:11.6-alpine
+		volumeMounts:
+			- name: data
+			mountPath: /var/lib/postgresql/data
+	volumes:
+		- name: data
+		persistentVolumeClaim: 			# Volume uses a PVC
+			claimName: postgres-pvc 	# PVC to use
+---
+# run the sleep Pod, which has access to the node's disk:
+kubectl apply -f sleep/sleep-with-hostPath.yaml
+# wait for the Pod to be ready:
+kubectl wait --for=condition=Ready pod -l app=sleep
+# create the directory path on the node, which the PV expects:
+kubectl exec deploy/sleep -- mkdir -p /node-root/volumes/pv01
+# deploy the database:
+kubectl apply -f todo-list/postgres/
+# wait for postgres to initialize:
+sleep 30
+# chec the database logs:
+kubectl logs -l app=todo-db --tail 1
+# check the data files in the volume:
+kubectl exec deploy/sleep -- sh -c 'ls -l /node-root/volumes/pv01 | grep wal'
+# deploy the web app components:
+kubectl apply -f todo-list/web
+# wait for the web pod:
+kubectl wait --for-condition=Ready pod -l app=todo-web
+# get the app URL from the Service:
+kubectl get svc todo-web -o jsonpath='http://{.status.loadBalancer.ingress[0].*}:8081/new'
+# delete the database:
+kubectl delete pod -l app=todo-db
+# check the contents of the volume on the node:
+kubectl exec deploy/sleep -- ls -l /node-root/volumes/pv01/pg_wal
+
+####
+# 5.4 Dynamic volume profisioning and storage classes
+####
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+	name: postgres-pvc-dynamic
+spec:
+	accessModes:
+		- ReadWriteOnce
+	resources:
+		requests:
+			storage: 100Mi
+			# There is no storageClassName field, so this uses the default class.
+---
+# Dynamically provisioned
+# deploy the PVC from listing 5.8:
+kubectl apply -f todo-list/postgres-persistentVolumeClaim-dynamic.yaml
+# check claims and volumes
+kubectl get pvc
+kubectl get pv
+# delete the claim:
+kubectl delete pvc postgres-pvc-dynamic
+# check volumes again:
+kubectl get pv
+
