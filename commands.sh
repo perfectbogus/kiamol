@@ -163,20 +163,50 @@ kubectl get pod -l app=sleep -o jsonpath='{.items[0].status.containerStatuses[0]
 # read the file in the volume:
 kubectl exec deploy/sleep -- cat /data/file.txt
 
+# Volume
+kubectl apply -f pi/v1/
+# wait for the web pod to be ready:
+kubectl wait --for=condition=Ready pod -l app=pi-web
+# find the app URL from your LoadBalancer:
+kubectl get svc pi-proxy -o jsonpath='http://{.status.loadBalancer.ingress[0].*}:8080/?dp=30000'
+# Check the cache in the proxy
+kubectl exec deploy/pi-proxy -- ls -l /data/nginx/cache
+# delete the proxy pod
+kubectl delete pod -l app=pi-proxy
+# check the cache directory of the replacement pod:
+kubectl exec deploy/pi-proxy -- ls -l /data/nginx/cache
+# update the proxy pod to use a HostPath volume:
+kubectl apply -f pi/nginx-with-hostPath.yaml
+# list the contents of the cache directory:
+kubectl exec deploy/pi-proxy -- ls -l /data/nginx/cache
+# delete the proxy pod:
+kubectl delete pod -l app=pi-proxy
 
+# run a pod with a volume mount to the host:
+kubectl apply -f sleep/sleep-with-hostPath.yaml
+# check the log files inside the container:
+kubectl exec deploy/sleep -- ls -l /var/log
+# check the logs on the node using the volume:
+kubectl exec deploy/sleep -- ls -l /node-root/var/log
+# check the container user:
+kubectl exec deploy/sleep -- whoami
 
+# Restricting mounts with subpaths
+kubectl apply -f sleep/sleep-with-hostPath-subPath.yaml
+# check the Pod logs on the node:
+kubectl exec deploy/sleep -- sh -c 'ls /pod-logs | grep _pi-'
+# check the container logs:
+kubectl exec deploy/sleep -- sh -c 'ls /container-logs | grep nginx'
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+####
+# 5.3 Storing clusterwide data with persistent volumes and claims
+####
+# Create a PV that uses local storage:
+# apply a custom label to the first node in your cluster:
+kubectl label node $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') kiamol=ch05
+# check the nodes with a label selector:
+kubectl get nodes -l kiamol=ch05
+# deploy a PV that uses a local volume on the labeled node:
+kubectl apply -f todo-list/persistentVolume.yaml
+# check the PV:
+kubectl get pv
