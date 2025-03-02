@@ -139,6 +139,41 @@ kubectl create configmap sleep-config-literal --from-literal=kiamol.section='4.1
 kubectl get cm sleep-config-literal
 kubectl describe cm sleep-config-literal
 
+####
+# 5: Storing data with volumes, mounts and claims
+####
+kubectl apply -f sleep/sleep.yaml
+kubectl exec deploy/sleep -- sh -c 'echo ch05 > file.txt; ls /*.txt'
+kubectl get pod -l app=sleep -o jsonpath='{.items[0].status.containerStatuses[0].containerID}'
+
+kubectl exec -it deploy/sleep -- killall5
+
+kubectl get pod -l app=sleep -o jsonpath='{.tems[0].status.containerStatuses[0].containerID}'
+kubectl exec deploy/sleep -- ls /*.txt
+
+# EmptyDir Volume
+kubectl apply -f sleep/sleep-with-emptyDir.yaml
+kubectl exec deploy/sleep -- ls /data
+kubectl exec deploy/sleep -- sh -c 'echo ch05 > /data/file.txt; ls /data'
+kubectl get pod -l app=sleep -o jsonpath='{.items[0].status.containerStatuses[0].containerID}'
+# Kill the container processes
+kubectl exec deploy/sleep -- killall5
+# Check replacement container ID:
+kubectl get pod -l app=sleep -o jsonpath='{.items[0].status.containerStatuses[0].containerID}'
+# read the file in the volume:
+kubectl exec deploy/sleep -- cat /data/file.txt
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
