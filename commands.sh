@@ -343,7 +343,23 @@ spec:
     requests:
       storage: 200Mi 
 
+####
+# 6 Scaling applications across mutiple Pods with controllers
+####
 
+# 6.1 How Kubernetes runs apps at scale
+---
+apiVersion: apps/v1
+kind: ReplicaSet				# The spec is almost identical to a Deployment.
+metadata:
+	name: whoami-web
+spec:
+	replicas: 1
+	selector:					# The selector for the ReplicaSet to find its Pods
+		matchLabels:
+			app: whoami-web
+	template: 					# The usual Pod spec follows.
+---
 
 
 
