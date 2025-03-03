@@ -360,10 +360,43 @@ spec:
 			app: whoami-web
 	template: 					# The usual Pod spec follows.
 ---
+# deploy the ReplicaSet and Service:
+kubectl apply -f whoami/
+# check the resource
+kubectl get replicaset whoami-web
+# make an http get call to the Service:
+curl $(kubectl get svc whoami-web -o jsonpath='http://{.status.loadBalancer.ingress[0].*}:8088')
+# delete all the pods:
+kubectl delete pods -l app=whoami-web
+# repeat the HTTP call:
+curl $(kubectl get svc whoami-web -o jsonpath='http://{.status.loadBalancer.ingress[0].*}:8088')
+# show the detail about the ReplicaSet:
+kubectl describe rs whoami-web
 
+####
+# Scale up
+####
+kubectl apply -f whoami/update/whoami-replicas-3.yaml
+# check pods:
+kubectl get pods -l app=whoami-web
+# delete all the pods
+kubectl delete pods -l app=whoami-web
+# check again:
+kubectl get pods -l app=whoami-web
+# repeat this http call a few times:
+curl $(kubectl get svc whoami-web -o jsonpath='http://{.status.loadBalancer.ingress[0].*}:8088')
+# run a sleep pod:
+kubectl apply -f sleep.yaml
+# check the details of the who-am-I service
+kubectl get svc whoami-web
+# run a DNS lookup for the Service in the sleep Pod:
+kubectl exec deploy/sleep -- sh -c 'nslookup whoami-web | grep "^[^*]"'
+# make some HTTP calls:
+kubectl exec deploy/sleep -- sh -c 'for i in 1 2 3; do curl -w \\n -s http://whoami-web:8088; done;'
 
-
-
+####
+# Scaling for load with Deployments and ReplicaSet
+####
 
 
 
