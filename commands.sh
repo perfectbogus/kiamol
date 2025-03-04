@@ -397,7 +397,36 @@ kubectl exec deploy/sleep -- sh -c 'for i in 1 2 3; do curl -w \\n -s http://who
 ####
 # Scaling for load with Deployments and ReplicaSet
 ####
+--- web.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pi-web
+spec:
+  replicas: 2  				# the replicas field is optional; it defaults to 1.
+selector:
+  matchLabels:
+    app: pi-web
+  template:						# The Pod spec follows.
 
+---
+# deploy the Pi app:
+kubectl apply -f pi/web
+# Check the ReplicaSet:
+kubectl get rs -l app=pi-web
+# scale up to more replicas:
+kubectl apply -f pi/web/update/web-replicas-3.yaml
+# Check the RS:
+kubectl get rs -l app=pi-web
+# deploy a changed Pod spec with enhaced logging:
+kubectl apply -f pi/web/update/web-lo
+
+
+
+
+
+
+  
 
 
 
